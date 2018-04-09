@@ -27,17 +27,36 @@ self.addEventListener('install', function(event) {
 });
 
 self.addEventListener('fetch', function(event) {
+  const url = new URL(event.request.url);
+
+  if (url.pathname.startsWith('/restaurant.html')) {
+    event.respondWith(
+        caches.match('restaurant.html')
+        // .then(response => response || fetch(event.request))
+        .then(response => {
+          // Cache hit - return response
+          if(response !== undefined) {
+            const cacheResponse = response;
+            caches.open(staticCacheName).then(function (cache) {
+              fetch(event.request).then(function(responseFetch) {
+                cache.put('restaurant.html', responseFetch.clone());
+              })
+            });
+            return response;
+          }
+          return fetch(event.request);
+        })
+    );
+    return;
+  } 
+
   event.respondWith(
     caches.match(event.request).then(function(response) {
-      console.log('before if response', response);
       // Cache hit - return response
       if(response !== undefined) {
-        console.log('enter if response', response);
         const cacheResponse = response;
         caches.open(staticCacheName).then(function (cache) {
-          console.log('cache open', cache);
           fetch(event.request).then(function(responseFetch) {
-            console.log('fetch success', responseFetch);
             cache.put(event.request, responseFetch.clone());
           })
         });
